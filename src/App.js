@@ -1,18 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import InfoBox from './InfoBox';
-import Map from './Map.js';
-import './App.css';
 import {
   FormControl,
   Select,
   MenuItem,
+  Card,
   CardContent,
 } from '@material-ui/core';
+import InfoBox from './InfoBox';
+import Map from './Map';
+import './App.css';
+import Table from './Table';
+import { sortData } from './util';
+import LineGraph from './LineGraph';
 
 function App() {
   //State = how to write variable in react
   const [countries, setCountries] = useState([]);
   const [country, setCountry] = useState('Worldwide');
+  const [countryInfo, setCountryInfo] = useState({});
+  const [tableData, setTableData] = useState([]);
+
+  useEffect(() => {
+    fetch("https://disease.sh/v3/covid-19/all")
+    .then(response => response.json())
+    .then(data => {
+      setCountryInfo(data);
+    })
+  }, [])
 
   //https://disease.sh/v3/covid-19/countries
   //UseEffect = Runs a piece of code based on given condition
@@ -31,6 +45,8 @@ function App() {
               flag: country.countryInfo.flag //flag of Country
             }));
 
+          const sortedData = sortData(data); 
+          setTableData(sortedData);  
           setCountries(countries);
         });
     };
@@ -38,15 +54,31 @@ function App() {
     getCountriesData();
   }, []);
 
-  const onCountryChange = (event) => {
+  const onCountryChange = async (event) => {
     const countryCode = event.target.value;
     setCountry(countryCode);
-  }
+
+    //https://disease.sh/v3/covid-19/all (Worldwide)
+    //https://disease.sh/v3/covid-19/countries/[COUNTRY_CODE]
+    const url = countryCode === 'Worldwide' 
+    ? "https://disease.sh/v3/covid-19/all"
+    : `https://disease.sh/v3/covid-19/countries/${countryCode}`;
+    await fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      setCountry(countryCode);
+      //All of the data....about the country
+      //from the country response
+      setCountryInfo(data);
+    });
+  };
+
+  console.log("COUNTRY INFO>>", countryInfo);
 
 
   return (
     <div className="app">
-      <div className="app_left">
+      <div className="app__left">
         <div className="app__header">
           <h1>COVID-19 Tracker</h1>
           <FormControl className="app__dropdown">
@@ -61,24 +93,24 @@ function App() {
         </div>
 
         <div className="app__stats">
-          <InfoBox title="Coronavirus Cases" cases={1234} total={2000} />
-          <InfoBox title="Recovered" cases={4528} total={3000} />
-          <InfoBox title="Deaths" cases={4857} total={4000} />
+          <InfoBox title="Coronavirus Cases" cases={countryInfo.todayCases} total={countryInfo.cases} />
+          <InfoBox title="Recovered" cases={countryInfo.todayRecovered} total={countryInfo.recovered } />
+          <InfoBox title="Deaths" cases={countryInfo.todayDeaths} total={countryInfo.deaths} />
         </div>
  
-      {/* Map */}
-      <Map />
+        {/* Map */}
+        <Map />
       </div>
 
       <Card className="app_right">
         <CardContent>
           <h3>Live Cases By Country</h3>
-          {/* Table */}
+          <Table countries={tableData} />
+
           <h3> Worldwide New Cases</h3>
-          {/* Graph */}
+          <LineGraph />
         </CardContent>
       </Card>
-
     </div >
   );
 }
