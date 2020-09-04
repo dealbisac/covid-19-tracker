@@ -16,7 +16,7 @@ function Map({countries, casesType, center, zoom}) {
                 {showDataOnMap(countries, casesType)}
             </LeafletMap>
         </div>
-    )
+    );
 }
 
 export default Map; 

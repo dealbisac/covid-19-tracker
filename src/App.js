@@ -10,14 +10,15 @@ import InfoBox from './InfoBox';
 import Map from './Map';
 import './App.css';
 import Table from './Table';
-import { sortData } from './util';
+import { sortData, preetyPrintStat } from './util';
 import LineGraph from './LineGraph';
 import "leaflet/dist/leaflet.css";
+import numeral from "numeral";
 
 function App() {
   //State = how to write variable in react
   const [countries, setCountries] = useState([]);
-  const [country, setCountry] = useState('Worldwide');
+  const [country, setInputCountry] = useState('Worldwide');
   const [countryInfo, setCountryInfo] = useState({});
   const [tableData, setTableData] = useState([]);
   const [mapCenter, setMapCenter] = useState({lat:28.3949, lng:84.1240});
@@ -27,11 +28,11 @@ function App() {
 
   useEffect(() => {
     fetch("https://disease.sh/v3/covid-19/all")
-    .then(response => response.json())
+    .then((response) => response.json())
     .then(data => {
       setCountryInfo(data);
-    })
-  }, [])
+    });
+  }, []);
 
   //https://disease.sh/v3/covid-19/countries
   //UseEffect = Runs a piece of code based on given condition
@@ -47,10 +48,10 @@ function App() {
             {
               name: country.country, //Nepal
               value: country.countryInfo.iso2, //NP
-              flag: country.countryInfo.flag //flag of Country
+              flag: country.countryInfo.flag, //flag of Country
             }));
 
-          const sortedData = sortData(data); 
+          let sortedData = sortData(data); 
           setTableData(sortedData); 
           setMapCountries(data); 
           setCountries(countries);
@@ -60,9 +61,11 @@ function App() {
     getCountriesData();
   }, []);
 
-  const onCountryChange = async (event) => {
-    const countryCode = event.target.value;
-    setCountry(countryCode);
+  // console.log(casesType);
+
+  const onCountryChange = async (e) => {
+    const countryCode = e.target.value;
+    //setCountry(countryCode);
 
     //https://disease.sh/v3/covid-19/all (Worldwide)
     //https://disease.sh/v3/covid-19/countries/[COUNTRY_CODE]
@@ -70,20 +73,18 @@ function App() {
     ? "https://disease.sh/v3/covid-19/all"
     : `https://disease.sh/v3/covid-19/countries/${countryCode}`;
     await fetch(url)
-    .then(response => response.json())
-    .then(data => {
-      setCountry(countryCode);
-      //All of the data....about the country
-      //from the country response
+    .then((response) => response.json())
+    .then((data) => {
+      setInputCountry(countryCode);
+      
+      //All of the data....about the country from the country response
       setCountryInfo(data);
-
       setMapCenter([data.countryInfo.lat, data.countryInfo.long]);
       setMapZoom(4);
     });
   };
 
-  console.log("COUNTRY INFO>>", countryInfo);
-
+  //console.log("COUNTRY INFO>>", countryInfo);
 
   return (
     <div className="app">
@@ -102,9 +103,29 @@ function App() {
         </div>
 
         <div className="app__stats">
-          <InfoBox title="Coronavirus Cases" cases={countryInfo.todayCases} total={countryInfo.cases} />
-          <InfoBox title="Recovered" cases={countryInfo.todayRecovered} total={countryInfo.recovered } />
-          <InfoBox title="Deaths" cases={countryInfo.todayDeaths} total={countryInfo.deaths} />
+          <InfoBox
+            isRed
+            active={casesType === "cases"} 
+            onClick={(e) => setCasesType("cases")}
+            title="Coronavirus Cases" 
+            cases={preetyPrintStat(countryInfo.todayCases)} 
+            total={numeral(countryInfo.cases).format("0,0a")} 
+            />
+          <InfoBox 
+            active={casesType === "recovered"} 
+            onClick={(e) => setCasesType("recovered")}
+            title="Recovered" 
+            cases={preetyPrintStat(countryInfo.todayRecovered)} 
+            total={numeral(countryInfo.recovered).format("0,0a") } 
+            />
+          <InfoBox 
+            isRed
+            active={casesType === "deaths"} 
+            onClick={(e) => setCasesType("deaths")}
+            title="Deaths" 
+            cases={preetyPrintStat(countryInfo.todayDeaths)} 
+            total={numeral(countryInfo.deaths).format("0,0a")} 
+            />
         </div>
 
         <Map 
@@ -116,11 +137,13 @@ function App() {
 
       <Card className="app_right">
         <CardContent>
+          <div className="app__information">
           <h3>Live Cases By Country</h3>
           <Table countries={tableData} />
 
-          <h3> Worldwide New Cases</h3>
-          <LineGraph />
+          <h3> Worldwide New {casesType}</h3>
+          <LineGraph  casesType={casesType}/>
+          </div>
         </CardContent>
       </Card>
     </div >
