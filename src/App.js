@@ -12,6 +12,7 @@ import './App.css';
 import Table from './Table';
 import { sortData } from './util';
 import LineGraph from './LineGraph';
+import "leaflet/dist/leaflet.css";
 
 function App() {
   //State = how to write variable in react
@@ -19,6 +20,8 @@ function App() {
   const [country, setCountry] = useState('Worldwide');
   const [countryInfo, setCountryInfo] = useState({});
   const [tableData, setTableData] = useState([]);
+  const [mapCenter, setMapCenter] = useState({lat:28.3949, lng:84.1240});
+  const [mapZoom, setMapZoom] = useState(3);
 
   useEffect(() => {
     fetch("https://disease.sh/v3/covid-19/all")
@@ -70,6 +73,9 @@ function App() {
       //All of the data....about the country
       //from the country response
       setCountryInfo(data);
+
+      setMapCenter([data.countryInfo.lat, data.countryInfo.long]);
+      setMapZoom(4);
     });
   };
 
@@ -97,9 +103,11 @@ function App() {
           <InfoBox title="Recovered" cases={countryInfo.todayRecovered} total={countryInfo.recovered } />
           <InfoBox title="Deaths" cases={countryInfo.todayDeaths} total={countryInfo.deaths} />
         </div>
- 
-        {/* Map */}
-        <Map />
+
+        <Map 
+          center={mapCenter} 
+          zoom={mapZoom}
+        />
       </div>
 
       <Card className="app_right">
